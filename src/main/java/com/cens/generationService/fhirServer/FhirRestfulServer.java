@@ -6,6 +6,7 @@ import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.rest.server.interceptor.ResponseHighlighterInterceptor;
 import com.cens.generationService.ApplicationProperties;
 import com.cens.generationService.resourcesProviders.BundleResourceProvider;
+import com.cens.generationService.resourcesProviders.QuestionnaireResponseResourceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,8 @@ public class FhirRestfulServer extends RestfulServer {
     ApplicationProperties properties;
     @Autowired
     BundleResourceProvider bundleResourceProvider;
+    @Autowired
+    QuestionnaireResponseResourceProvider questResResourceProvider;
  
     public FhirRestfulServer()  {
         super();
@@ -43,7 +46,7 @@ public class FhirRestfulServer extends RestfulServer {
             OpenApiInterceptor openApiInterceptor = new OpenApiInterceptor();
             registerInterceptor(openApiInterceptor);
             registerProvider(this.bundleResourceProvider);
-
+            registerProvider(this.questResResourceProvider);
             // Format the responses in nice HTML
             registerInterceptor(new ResponseHighlighterInterceptor());
 

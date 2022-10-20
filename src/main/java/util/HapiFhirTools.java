@@ -7,6 +7,7 @@ package util;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
+import ca.uhn.fhir.rest.server.exceptions.MethodNotAllowedException;
 import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CanonicalType;
@@ -25,6 +26,7 @@ public final class HapiFhirTools {
         
         FhirContext ctx = FhirContext.forR4();
         IParser parser = ctx.newJsonParser();
+        parser.setPrettyPrint(true);
         String serialized = parser.encodeResourceToString(r);
         System.out.println(serialized);
     }
@@ -59,6 +61,22 @@ public final class HapiFhirTools {
                 profile = profiles.get(0).asStringValue();
         }
         return profile;
+    }
+    
+    public static Bundle.BundleEntryComponent findEntryByResourceClassAndRemove(Bundle bundle,Class resourceType,String method)
+    {
+       
+        List<Bundle.BundleEntryComponent> entries = bundle.getEntry();
+        for (Bundle.BundleEntryComponent entry : entries){
+            if(entry.getResource().getResourceType().name().equals(resourceType.getSimpleName())){
+                boolean validateMethod = HapiFhirTools.validateMethod(entry, method);
+                if(!validateMethod)
+                    throw new MethodNotAllowedException("There is an unsupported operation in Bundle.");
+                entries.remove(entry);
+                return entry;
+            }
+        }
+        return null;
     }
     
 }
