@@ -45,7 +45,7 @@ public class QuestionnaireResponseResourceProvider implements IResourceProvider{
      * @param quest
      * @return
      */
-    @Operation(name="$generateHealthCertificate")
+    @Operation(name="$QRtoCoreVSDataSet")
     public Bundle generateHealthCertificate(@ResourceParam QuestionnaireResponse quest) {
    
         System.out.println("quest = " + quest.getId());
