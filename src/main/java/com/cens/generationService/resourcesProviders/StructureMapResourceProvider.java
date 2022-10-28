@@ -8,6 +8,8 @@ package com.cens.generationService.resourcesProviders;
 import ca.uhn.fhir.rest.annotation.Operation;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.IResourceProvider;
+import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
+import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import com.cens.generationService.ApplicationProperties;
 import com.cens.generationService.services.BundleService;
 import com.cens.generationService.services.DDCCVSCoreDataSetService;
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -56,13 +59,25 @@ public class StructureMapResourceProvider implements IResourceProvider{
         HapiFhirTools.printResource(b, QuestionnaireResponse.class);
         String contentType = theServletRequest.getContentType();
         System.out.println("contentType = " + contentType);
+        
+        Map<String, String[]> requestParams = theServletRequest.getParameterMap();
+        String[] source = requestParams.get("source");
+        if (source == null || source.length <= 0) {
+            throw new InvalidRequestException("source parameter not found.");
+        }
         //String collect = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
         //System.out.println("collect = " + collect);
         
         PrintWriter out = response.getWriter();
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        ObjectNode node = service.QRtoDDCCVSCoreDataSet(b);
+        ObjectNode node = JsonNodeFactory.instance.objectNode();;
+        if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/QRespToVSCoreDataSet")){
+            node = service.QRtoDDCCVSCoreDataSet(b);
+        }
+        else{
+            throw new UnprocessableEntityException("Map not available with canonical url "+source[0]);
+        }
         String toPrettyString = node.toPrettyString();
         System.out.println("toPrettyString = " + toPrettyString);
         out.print(node.toString());
