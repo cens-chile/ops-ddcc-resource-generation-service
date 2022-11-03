@@ -30,6 +30,14 @@ public final class HapiFhirTools {
         String serialized = parser.encodeResourceToString(r);
         System.out.println(serialized);
     }
+    public static String resourceToString(Resource r, Class clazz){
+        
+        FhirContext ctx = FhirContext.forR4();
+        IParser parser = ctx.newJsonParser();
+        parser.setPrettyPrint(true);
+        String serialized = parser.encodeResourceToString(r);
+        return serialized;
+    }
     
     public static Bundle.BundleEntryComponent createEntryResponseComponent(
             String status, String etag,String location, InstantType date){

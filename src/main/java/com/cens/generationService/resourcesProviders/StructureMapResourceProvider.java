@@ -11,28 +11,19 @@ import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.exceptions.InvalidRequestException;
 import ca.uhn.fhir.rest.server.exceptions.UnprocessableEntityException;
 import com.cens.generationService.ApplicationProperties;
-import com.cens.generationService.services.BundleService;
 import com.cens.generationService.services.DDCCVSCoreDataSetService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.hl7.fhir.dstu2.model.StructureDefinition;
 import org.hl7.fhir.instance.model.api.IBaseResource;
-import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.StructureMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import util.HapiFhirTools;
 
 /**
  *
@@ -55,10 +46,9 @@ public class StructureMapResourceProvider implements IResourceProvider{
     @Operation(name = "$transform", type = StructureMap.class, manualResponse = true)
     public void manualInputAndOutput(RequestDetails theRequestDetails,HttpServletRequest theServletRequest, HttpServletResponse response)
       throws IOException {
+        
+        log.info("Entry StructureMap/$transform request.");
         QuestionnaireResponse b = (QuestionnaireResponse) theRequestDetails.getResource();
-        HapiFhirTools.printResource(b, QuestionnaireResponse.class);
-        String contentType = theServletRequest.getContentType();
-        System.out.println("contentType = " + contentType);
         
         Map<String, String[]> requestParams = theServletRequest.getParameterMap();
         String[] source = requestParams.get("source");
@@ -71,16 +61,16 @@ public class StructureMapResourceProvider implements IResourceProvider{
         PrintWriter out = response.getWriter();
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        ObjectNode node = JsonNodeFactory.instance.objectNode();;
+        String res = "";
+        
         if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/QRespToVSCoreDataSet")){
-            node = service.QRtoDDCCVSCoreDataSet(b);
+            //node = service.QRtoDDCCVSCoreDataSet(b);
+            res = this.service.QRtoDDCCVSCoreDataSetStringJson(b);
         }
         else{
             throw new UnprocessableEntityException("Map not available with canonical url "+source[0]);
         }
-        String toPrettyString = node.toPrettyString();
-        System.out.println("toPrettyString = " + toPrettyString);
-        out.print(node.toString());
+        out.print(res);
         out.flush(); 
   
     }
