@@ -5,6 +5,8 @@
  */
 package com.cens.generationService.resourcesProviders;
 
+import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.annotation.Operation;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.IResourceProvider;
@@ -15,10 +17,12 @@ import com.cens.generationService.services.DDCCVSCoreDataSetService;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
+import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.StructureMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +47,12 @@ public class StructureMapResourceProvider implements IResourceProvider{
         return StructureMap.class;
     }
     
-    @Operation(name = "$transform", type = StructureMap.class, manualResponse = true)
-    public void manualInputAndOutput(RequestDetails theRequestDetails,HttpServletRequest theServletRequest, HttpServletResponse response)
+    @Operation(name = "$transform", type = StructureMap.class, manualResponse = true,manualRequest = true)
+    public void manualInputAndOutput(HttpServletRequest theServletRequest, HttpServletResponse response)
       throws IOException {
         
         log.info("Entry StructureMap/$transform request.");
-        QuestionnaireResponse b = (QuestionnaireResponse) theRequestDetails.getResource();
+        
         
         Map<String, String[]> requestParams = theServletRequest.getParameterMap();
         String[] source = requestParams.get("source");
@@ -64,8 +68,15 @@ public class StructureMapResourceProvider implements IResourceProvider{
         String res = "";
         
         if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/QRespToVSCoreDataSet")){
-            //node = service.QRtoDDCCVSCoreDataSet(b);
-            res = this.service.QRtoDDCCVSCoreDataSetStringJson(b);
+            String data = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            FhirContext ctx = FhirContext.forR4();
+            IParser parser = ctx.newJsonParser();
+            QuestionnaireResponse parsed = parser.parseResource(QuestionnaireResponse.class, data);
+            res = this.service.QRtoDDCCVSCoreDataSetStringJson(parsed);
+        }
+        else if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/CoreDataSetVSToAddBundle")){
+            String core = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            res = this.service.getStringDDCCVSCoreDataSetToAddBundle(core);
         }
         else{
             throw new UnprocessableEntityException("Map not available with canonical url "+source[0]);

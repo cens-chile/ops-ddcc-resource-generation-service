@@ -30,7 +30,7 @@ public final class HapiFhirTools {
         String serialized = parser.encodeResourceToString(r);
         System.out.println(serialized);
     }
-    public static String resourceToString(Resource r, Class clazz){
+    public static String resourceToString(Resource r){
         
         FhirContext ctx = FhirContext.forR4();
         IParser parser = ctx.newJsonParser();
