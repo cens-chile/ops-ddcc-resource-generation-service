@@ -76,7 +76,7 @@ public class StructureMapResourceProvider implements IResourceProvider{
         }
         else if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/CoreDataSetVSToAddBundle")){
             String core = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-            res = this.service.getStringDDCCVSCoreDataSetToAddBundle(core);
+            res = this.service.transformDDCCVSCoreDataSetToAddBundle(core);
         }
         else{
             throw new UnprocessableEntityException("Map not available with canonical url "+source[0]);

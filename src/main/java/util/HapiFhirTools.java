@@ -87,4 +87,9 @@ public final class HapiFhirTools {
         return null;
     }
     
+    public static void addProfileToResource(Resource r, String profile)
+    {
+        r.getMeta().getProfile().add(new CanonicalType(profile));
+    }
+    
 }

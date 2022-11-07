@@ -26,6 +26,7 @@ import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.Enumeration;
 import org.hl7.fhir.r4.model.Extension;
+import org.hl7.fhir.r4.model.HumanName;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Immunization;
@@ -36,6 +37,7 @@ import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.PositiveIntType;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
+import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -294,7 +296,7 @@ public class DDCCVSCoreDataSetService {
     
     
     
-    public String getStringDDCCVSCoreDataSetToAddBundle(String core){
+    public String transformDDCCVSCoreDataSetToAddBundle(String core){
         ObjectMapper mapper = new ObjectMapper();
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -312,29 +314,67 @@ public class DDCCVSCoreDataSetService {
         Bundle b = new Bundle();
         b.setType(Bundle.BundleType.TRANSACTION);
         Patient pat = new Patient();
-        pat.setId(IdType.newRandomUuid());
-        Composition comp = new Composition();
-        comp.setId(IdType.newRandomUuid());
-        Immunization imm = new Immunization();
-        ImmunizationRecommendation immR = new ImmunizationRecommendation();
-        imm.setPatient(new Reference(pat.getIdElement().getValue()));
-        immR.setPatient(new Reference(pat.getIdElement().getValue()));
-        imm.setId(IdType.newRandomUuid());
+        HapiFhirTools.addProfileToResource(pat,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCPatient");
+        IdType patId = IdType.newRandomUuid();
+        pat.setId(patId.getValue().split(":")[2]);
+        Reference patRef = new Reference(patId);
         
-        JsonNode get = node.get("sex");
-        if(get!=null)
-            pat.getGenderElement().setValueAsString(get.asText());
+        
+        Composition comp = new Composition();
+        HapiFhirTools.addProfileToResource(comp,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCVSComposition");
+        IdType compId = IdType.newRandomUuid();
+        comp.setId(compId.getValue().split(":")[2]);
+        Reference compRef = new Reference(compId);
+        
+        
+        Immunization imm = new Immunization();
+        HapiFhirTools.addProfileToResource(imm,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCImmunization");
+        IdType immId = IdType.newRandomUuid();
+        imm.setId(immId.getValue().split(":")[2]);
+        Reference immRef = new Reference(immId);
+        
+        ImmunizationRecommendation immR = new ImmunizationRecommendation();
+        HapiFhirTools.addProfileToResource(immR,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCImmunizationRecommendation");
+        IdType immRId = IdType.newRandomUuid();
+        immR.setId(immRId.getValue().split(":")[2]);
+        Reference immRRef = new Reference(immRId);
+        
+        imm.setPatient(patRef);
+        immR.setPatient(patRef);
         
         //QuestionnaireResponse debe ir vacio
         OperationOutcome out = new OperationOutcome();
         
+        JsonNode get = node.get("name");
+        if(get!=null){
+            pat.getNameFirstRep().setUse(HumanName.NameUse.OFFICIAL);
+            pat.getNameFirstRep().setText(get.asText());
+        }
+        else{
+            addNotFoundIssue("name", out);
+        }
+        get = node.get("birthDate");
+        if(get!=null)
+            pat.setBirthDateElement(new DateType(get.asText()));
         
-        JsonNode certificade = node.get("certificate");
-        if(certificade==null){
+        get = node.get("identifier");
+        if(get!=null){
+            pat.getIdentifierFirstRep().setValue(get.asText());
+        }
+        
+        get = node.get("sex");
+        if(get!=null)
+            pat.getGenderElement().setValueAsString(get.asText());
+        
+        
+        
+        
+        JsonNode certificate = node.get("certificate");
+        if(certificate==null){
             addNotFoundIssue("certificate", out);
         }
         try{
-            JsonNode period = certificade.get("period");
+            JsonNode period = certificate.get("period");
             if(period!=null){
                 JsonNode start = period.get("start");
                 JsonNode end = period.get("end");
@@ -347,7 +387,7 @@ public class DDCCVSCoreDataSetService {
                     comp.getEventFirstRep().getPeriod().setStart(readValue, TemporalPrecisionEnum.DAY);
                 }  
             }
-            JsonNode issuer = certificade.get("issuer");
+            JsonNode issuer = certificate.get("issuer");
             if(issuer!=null){
                 String pha = issuer.get("identifier").get("value").asText();
                 comp.getAuthorFirstRep().setType("Organization");
@@ -356,7 +396,7 @@ public class DDCCVSCoreDataSetService {
             else{
                 addNotFoundIssue("certificate.issuer", out);
             }
-            JsonNode prac = certificade.get("practitioner");
+            JsonNode prac = certificate.get("practitioner");
             if(prac!=null){
                 String hw = prac.get("value").asText();
                 Reference actor = imm.getPerformerFirstRep().getActor();
@@ -364,7 +404,7 @@ public class DDCCVSCoreDataSetService {
                 actor.getIdentifier().setValue(hw);
             }
         }catch(Exception ex){
-            System.out.println("ex = " + ex.getMessage());
+            addErrorIssue("certificate", ex.getMessage(), out);
         }
         
         JsonNode vaccination = node.get("vaccination");
@@ -376,9 +416,11 @@ public class DDCCVSCoreDataSetService {
             if(vaccine!=null){
                 String vS = vaccine.get("system").asText();
                 String vC = vaccine.get("code").asText();
-                Coding vaccineCodeC = imm.getVaccineCode().getCodingFirstRep();
-                vaccineCodeC.setSystem(vS);
-                vaccineCodeC.setCode(vC);    
+                CodeableConcept vaccineCodeC = imm.getVaccineCode();
+                Coding coding = new Coding(vS, vC,"");
+                vaccineCodeC.addCoding(coding);
+                immR.getRecommendationFirstRep().getVaccineCodeFirstRep().addCoding(coding);
+                
             }
             else{
                 addNotFoundIssue("vaccination.vaccine", out);
@@ -422,8 +464,8 @@ public class DDCCVSCoreDataSetService {
             }
             JsonNode date = vaccination.get("date");
             if(date!=null){
-                //Date readValue = df.parse(date.asText());
                 imm.setOccurrence(new DateTimeType(date.asText()));
+                immR.setDateElement(new DateTimeType(date.asText()));
             }
             else{
                 addNotFoundIssue("vaccination.date", out);
@@ -438,8 +480,8 @@ public class DDCCVSCoreDataSetService {
             
             JsonNode dose = vaccination.get("dose");
             if(dose!=null){
-                //Date readValue = df.parse(date.asText());
                 imm.getProtocolAppliedFirstRep().setDoseNumber(new PositiveIntType(dose.asInt()));
+                immR.getRecommendationFirstRep().setDoseNumber(new PositiveIntType(dose.asInt()));
             }
             else{
                 addNotFoundIssue("vaccination.dose", out);
@@ -447,12 +489,48 @@ public class DDCCVSCoreDataSetService {
             
             JsonNode totalDoses = vaccination.get("totalDoses");
             if(totalDoses!=null){
-                //Date readValue = df.parse(date.asText());
                 imm.getProtocolAppliedFirstRep().setSeriesDoses(new PositiveIntType(totalDoses.asInt()));
+                immR.getRecommendationFirstRep().setSeriesDoses(new PositiveIntType(dose.asInt()));
+                
             }
+            
+            JsonNode country = vaccination.get("country");
+            if(country!=null){
+                Extension cou = new Extension("http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCCountryOfVaccination");
+                String vS = country.get("system").asText();
+                String vC = country.get("code").asText();
+                cou.setValue(new Coding(vS, vC,""));
+                imm.addExtension(cou);
+            }
+            else{
+                addNotFoundIssue("vaccination.country", out);
+            }
+            
+            JsonNode centre = vaccination.get("centre");
+            if(centre!=null){
+                imm.getLocation().setDisplay(centre.asText());
+            }
+            else{
+                addNotFoundIssue("vaccination.centre", out);
+            }
+            
+            JsonNode disease = vaccination.get("disease");
+            if(country!=null){
+                String vS = country.get("system").asText();
+                String vC = country.get("code").asText();
+                imm.getProtocolAppliedFirstRep().getTargetDiseaseFirstRep().addCoding(new Coding(vS, vC, ""));
+            }
+            JsonNode nextDose = vaccination.get("nextDose");
+            if(nextDose!=null){
+                Date readValue = df.parse(nextDose.asText());
+                immR.getRecommendationFirstRep().getDateCriterionFirstRep().setValueElement(new DateTimeType(nextDose.asText()));
+            }
+            
             
         }catch(Exception ex){
             System.out.println("ex = " + ex.getMessage());
+            addErrorIssue("vaccination", ex.getMessage(), out);
+            
         }
         
         if(out.getIssue().size()>0){
@@ -461,10 +539,48 @@ public class DDCCVSCoreDataSetService {
             return resourceToString;
         }
         
-        String resourceToString = HapiFhirTools.resourceToString(imm);
+        
+        
+        comp.setStatus(Composition.CompositionStatus.FINAL);
+        comp.setType(new CodeableConcept(new Coding("http://loinc.org","82593-5", null)));
+        comp.getCategoryFirstRep().addCoding(
+        new Coding("http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-Composition-Category-CodeSystem",
+        "ddcc-vs",null));
+        comp.setDate(new Date());
+        comp.getIdentifier().setSystem("http://acme.org/idcomposition");
+        comp.getIdentifier().setValue("123617826318673");
+        comp.getSectionFirstRep().setCode(new CodeableConcept(new Coding("http://loinc.org","11369-6", null)));
+        comp.getSectionFirstRep().setFocus(immRef);
+        comp.setSubject(patRef);
+        comp.setTitle("Digital Documentation of COVID-19 Certificate (DDCC)");
+        comp.getAttesterFirstRep().setMode(Composition.CompositionAttestationMode.OFFICIAL);
+        comp.getSectionFirstRep().addEntry(immRef);
+        
+        
+        
+        
+        //b.addEntry().setFullUrl(patRef.getReference()).setResource(pat);
+        addBundleEntryComponentToAddBundle(comp,compRef,b);
+        addBundleEntryComponentToAddBundle(pat,patRef,b);
+        addBundleEntryComponentToAddBundle(imm,immRef,b);
+        if(immR.getRecommendationFirstRep().getDateCriterionFirstRep().getValue()!=null){
+            comp.getSectionFirstRep().addEntry(immRRef);
+            addBundleEntryComponentToAddBundle(immR,immRRef,b);
+        }
+        String resourceToString = HapiFhirTools.resourceToString(b);
         return resourceToString;
     }
     
+    void addBundleEntryComponentToAddBundle(Resource r, Reference ref, Bundle b){
+        Bundle.BundleEntryComponent entry = new Bundle.BundleEntryComponent();
+        entry.setResource(r);
+        entry.setFullUrl(ref.getReference());
+        Bundle.BundleEntryRequestComponent request = entry.getRequest();
+        request.setMethod(Bundle.HTTPVerb.PUT);
+        request.setUrl(r.getResourceType().name()+"/"+r.getId());
+        b.addEntry(entry);
+        
+    }
     
     
     /**
@@ -598,6 +714,14 @@ public class DDCCVSCoreDataSetService {
         issue = new OperationOutcome.OperationOutcomeIssueComponent();
         issue.setCode(OperationOutcome.IssueType.INVALID);
         issue.setDiagnostics(value+" is invalid");
+        out.getIssue().add(issue);
+    }
+    
+    void addErrorIssue(String value, String message, OperationOutcome out){
+        OperationOutcome.OperationOutcomeIssueComponent issue;
+        issue = new OperationOutcome.OperationOutcomeIssueComponent();
+        issue.setCode(OperationOutcome.IssueType.EXCEPTION);
+        issue.setDiagnostics(value+" have errors in definition ["+message+"]");
         out.getIssue().add(issue);
     }
     
