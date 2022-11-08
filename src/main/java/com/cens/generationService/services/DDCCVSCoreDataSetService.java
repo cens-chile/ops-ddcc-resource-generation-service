@@ -18,12 +18,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import org.hl7.fhir.exceptions.FHIRException;
+import org.hl7.fhir.r4.model.Attachment;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Composition;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DateType;
+import org.hl7.fhir.r4.model.DocumentReference;
 import org.hl7.fhir.r4.model.Enumeration;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.HumanName;
@@ -339,6 +341,30 @@ public class DDCCVSCoreDataSetService {
         immR.setId(immRId.getValue().split(":")[2]);
         Reference immRRef = new Reference(immRId);
         
+        DocumentReference docR = new DocumentReference();
+        String qrSystem = "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Format-CodeSystem";
+        HapiFhirTools.addProfileToResource(docR,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCDocumentReferenceQR");
+        IdType docRId = IdType.newRandomUuid();
+        docR.setId(docRId.getValue().split(":")[2]);
+        Reference docRRef = new Reference(docRId);
+        docR.setType(new CodeableConcept(new Coding("https://worldhealthorganization.github.io/ddcc/CodeSystem-DDCC-QR-Type-CodeSystem.html"
+                ,"who","WHO DDCC")));
+        docR.setSubject(patRef);
+        Attachment attachment = new Attachment();
+        attachment.setContentType("attachment");
+        docR.getContent().add(new DocumentReference.DocumentReferenceContentComponent(attachment)
+        .setFormat(new Coding(qrSystem,"serialized",null)));
+        docR.getContent().add(new DocumentReference.DocumentReferenceContentComponent(attachment)
+        .setFormat(new Coding(qrSystem,"image",null)));
+        docR.getContent().add(new DocumentReference.DocumentReferenceContentComponent(attachment)
+        .setFormat(new Coding(qrSystem,"pdf",null)));
+        //docR.getCategory().add(new CodeableConcept(
+        //new Coding("http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Category-Usage-CodeSystem",
+        //"who", null)));
+        
+        docR.setDescription("WHO QR code for COVID 19 Vaccine Certificate");
+        
+        
         imm.setPatient(patRef);
         immR.setPatient(patRef);
         
@@ -555,6 +581,7 @@ public class DDCCVSCoreDataSetService {
         comp.setTitle("Digital Documentation of COVID-19 Certificate (DDCC)");
         comp.getAttesterFirstRep().setMode(Composition.CompositionAttestationMode.OFFICIAL);
         comp.getSectionFirstRep().addEntry(immRef);
+        comp.getSectionFirstRep().addEntry(docRRef);
         
         
         
@@ -563,6 +590,7 @@ public class DDCCVSCoreDataSetService {
         addBundleEntryComponentToAddBundle(comp,compRef,b);
         addBundleEntryComponentToAddBundle(pat,patRef,b);
         addBundleEntryComponentToAddBundle(imm,immRef,b);
+        addBundleEntryComponentToAddBundle(docR,docRRef,b);
         if(immR.getRecommendationFirstRep().getDateCriterionFirstRep().getValue()!=null){
             comp.getSectionFirstRep().addEntry(immRRef);
             addBundleEntryComponentToAddBundle(immR,immRRef,b);

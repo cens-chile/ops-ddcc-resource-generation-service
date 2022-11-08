@@ -35,6 +35,9 @@ public final class HapiFhirTools {
         FhirContext ctx = FhirContext.forR4();
         IParser parser = ctx.newJsonParser();
         parser.setPrettyPrint(true);
+        parser.setSummaryMode(false);
+        parser.setSuppressNarratives(false);
+        
         String serialized = parser.encodeResourceToString(r);
         return serialized;
     }
