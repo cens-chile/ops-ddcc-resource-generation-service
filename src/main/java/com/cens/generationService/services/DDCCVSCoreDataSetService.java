@@ -347,7 +347,7 @@ public class DDCCVSCoreDataSetService {
         IdType docRId = IdType.newRandomUuid();
         docR.setId(docRId.getValue().split(":")[2]);
         Reference docRRef = new Reference(docRId);
-        docR.setType(new CodeableConcept(new Coding("https://worldhealthorganization.github.io/ddcc/CodeSystem-DDCC-QR-Type-CodeSystem.html"
+        docR.setType(new CodeableConcept(new Coding("http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Type-CodeSystem"
                 ,"who","WHO DDCC")));
         docR.setSubject(patRef);
         Attachment attachment = new Attachment();
