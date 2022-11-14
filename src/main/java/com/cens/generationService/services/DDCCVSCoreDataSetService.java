@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.RawValue;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
@@ -36,6 +37,7 @@ import org.hl7.fhir.r4.model.ImmunizationRecommendation;
 import org.hl7.fhir.r4.model.IntegerType;
 import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Patient;
+import org.hl7.fhir.r4.model.Period;
 import org.hl7.fhir.r4.model.PositiveIntType;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
@@ -823,4 +825,93 @@ public class DDCCVSCoreDataSetService {
         }
     }
     
+    
+    public String resourcesToVSCoreDataSet(Bundle entry){
+        Bundle.BundleEntryComponent find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Composition.class,"PUT");
+        Composition comp = (Composition) find.getResource();
+        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Patient.class,"PUT");
+        Patient pat = (Patient) find.getResource();
+        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Immunization.class,"PUT");
+        Immunization imm = (Immunization) find.getResource();
+        
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("resourceType", "DDCCCoreDataSet");
+        
+        ObjectNode certificate = JsonNodeFactory.instance.objectNode();
+        node.putPOJO("certificate", certificate);
+        ObjectNode certificatePeriod = JsonNodeFactory.instance.objectNode();
+        certificate.putPOJO("period", certificatePeriod);
+        ObjectNode vaccination = JsonNodeFactory.instance.objectNode();
+        node.putPOJO("vaccination", vaccination);
+        OperationOutcome out = new OperationOutcome();
+        OperationOutcome.OperationOutcomeIssueComponent issue;
+        
+        
+        HumanName name = pat.getNameFirstRep();
+        if(name!=null && name.getText()!=null){
+            node.put("name",name.getText());
+        }
+        else
+            addNotFoundIssue("bundle.entry[Patient].name[0].text", out);
+        
+        DateType birth = pat.getBirthDateElement();
+        if(birth!=null)
+            node.put("birthDate",birth.asStringValue());
+        
+        Identifier ident = pat.getIdentifierFirstRep();
+        if(ident!=null)
+            node.put("identifier",ident.getValue());
+        
+        Immunization.ImmunizationProtocolAppliedComponent protocolApplied = imm.getProtocolAppliedFirstRep();
+        if(protocolApplied!=null){
+           Reference authority = protocolApplied.getAuthority();
+           protocolApplied.getDoseNumberPositiveIntType();
+           protocolApplied.getSeriesDosesPositiveIntType();
+           if(authority!=null){
+               certificate.put("issuer", authority.getIdentifier().getValue());
+           }
+           else
+               addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0].authority.reference.identifier", out);
+        }
+        else{
+            addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0]", out);
+        }
+        
+        Bundle.BundleLinkComponent link = entry.getLinkFirstRep();
+        if(link!=null)
+            certificate.put("hcid", link.getUrl().replace("urn:HCID:", ""));
+        else
+            addNotFoundIssue("bundle.link[0].url", out); 
+        certificate.put("ddccid", entry.getId());
+        certificate.put("version","RC2");
+        
+        Composition.CompositionEventComponent event = comp.getEventFirstRep();
+        if(event!=null){
+            Period period = event.getPeriod();
+            if(period!=null){
+                if(period.getStartElement()!=null)
+                    certificatePeriod.put("start",period.getStartElement().asStringValue());
+                if(period.getEndElement()!=null)
+                    certificatePeriod.put("end",period.getEndElement().asStringValue());
+            }
+        }
+        
+        CodeableConcept vaccineCode = imm.getVaccineCode();
+        if(vaccineCode!=null){
+            Coding coding = vaccineCode.getCodingFirstRep();
+            if(coding!=null){
+                vaccination.putRawValue("vaccine",new RawValue("{\"system\":\""+
+                        coding.getSystem()+"\",\"code\":\""+
+                        coding.getCode()+"\"}"));
+            }
+            else
+                addNotFoundIssue("bundle.entry[Immunization].vaccineCode.coding[0]", out);
+        }
+        else
+            addNotFoundIssue("bundle.entry[Immunization].vaccineCode", out);
+        
+        
+        
+        return node.asText();
+    }
 }
