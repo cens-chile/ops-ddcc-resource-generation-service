@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.StructureMap;
@@ -77,6 +78,13 @@ public class StructureMapResourceProvider implements IResourceProvider{
         else if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/CoreDataSetVSToAddBundle")){
             String core = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
             res = this.service.transformDDCCVSCoreDataSetToAddBundle(core);
+        }
+        else if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/ResourcesToVSCoreDataSet")){
+            String data = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            FhirContext ctx = FhirContext.forR4();
+            IParser parser = ctx.newJsonParser();
+            Bundle b = parser.parseResource(Bundle.class, data);
+            res = this.service.resourcesToVSCoreDataSet(b);
         }
         else{
             throw new UnprocessableEntityException("Map not available with canonical url "+source[0]);
