@@ -1,0 +1,12 @@
+version: '3.7'
+
+networks:
+  ddcc-net:
+    external: true
+services:
+  resource-generation-service:
+    build: .
+    networks:
+      - ddcc-net
+    ports:
+      - "8080:8080"
