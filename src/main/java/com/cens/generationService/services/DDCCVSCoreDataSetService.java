@@ -28,6 +28,7 @@ import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.DocumentReference;
 import org.hl7.fhir.r4.model.Enumeration;
+import org.hl7.fhir.r4.model.Enumerations;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.HumanName;
 import org.hl7.fhir.r4.model.IdType;
@@ -42,6 +43,7 @@ import org.hl7.fhir.r4.model.PositiveIntType;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.Resource;
+import org.hl7.fhir.r4.model.StringType;
 import org.hl7.fhir.r4.model.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -261,7 +263,7 @@ public class DDCCVSCoreDataSetService {
         if(item != null ){
             String stringFromItem = getStringFromItem("hw", item, out);
             if(stringFromItem!=null){
-                certificate.putRawValue("practitioner",new RawValue("{\"value\":\""+stringFromItem+"\"}"));
+                vaccination.putRawValue("practitioner",new RawValue("{\"value\":\""+stringFromItem+"\"}"));
             }
         }
             
@@ -420,17 +422,13 @@ public class DDCCVSCoreDataSetService {
                 String pha = issuer.get("identifier").get("value").asText();
                 comp.getAuthorFirstRep().setType("Organization");
                 comp.getAuthorFirstRep().getIdentifier().setValue(pha);
+                Reference authority = imm.getProtocolAppliedFirstRep().getAuthority();
+                authority.getIdentifier().setValue(pha);
             }
             else{
                 addNotFoundIssue("certificate.issuer", out);
             }
-            JsonNode prac = certificate.get("practitioner");
-            if(prac!=null){
-                String hw = prac.get("value").asText();
-                Reference actor = imm.getPerformerFirstRep().getActor();
-                actor.setType("Practitioner");
-                actor.getIdentifier().setValue(hw);
-            }
+            
         }catch(Exception ex){
             addErrorIssue("certificate", ex.getMessage(), out);
         }
@@ -440,6 +438,14 @@ public class DDCCVSCoreDataSetService {
             addNotFoundIssue("vaccination", out);
         }
         try{
+            
+            JsonNode prac = vaccination.get("practitioner");
+            if(prac!=null){
+                String hw = prac.get("value").asText();
+                Reference actor = imm.getPerformerFirstRep().getActor();
+                actor.setType("Practitioner");
+                actor.getIdentifier().setValue(hw);
+            }
             JsonNode vaccine = vaccination.get("vaccine");
             if(vaccine!=null){
                 String vS = vaccine.get("system").asText();
@@ -833,6 +839,8 @@ public class DDCCVSCoreDataSetService {
         Patient pat = (Patient) find.getResource();
         find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Immunization.class,"PUT");
         Immunization imm = (Immunization) find.getResource();
+        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, ImmunizationRecommendation.class,"PUT");
+        ImmunizationRecommendation immR = (ImmunizationRecommendation) find.getResource();
         
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("resourceType", "DDCCCoreDataSet");
@@ -864,14 +872,25 @@ public class DDCCVSCoreDataSetService {
         
         Immunization.ImmunizationProtocolAppliedComponent protocolApplied = imm.getProtocolAppliedFirstRep();
         if(protocolApplied!=null){
-           Reference authority = protocolApplied.getAuthority();
-           protocolApplied.getDoseNumberPositiveIntType();
-           protocolApplied.getSeriesDosesPositiveIntType();
-           if(authority!=null){
-               certificate.put("issuer", authority.getIdentifier().getValue());
-           }
-           else
+            Reference authority = protocolApplied.getAuthority();
+            PositiveIntType doseNumber = protocolApplied.getDoseNumberPositiveIntType();
+            PositiveIntType seriesDoses = protocolApplied.getSeriesDosesPositiveIntType();
+            Coding disCoding = protocolApplied.getTargetDiseaseFirstRep().getCodingFirstRep();
+            if(authority.getIdentifier().getValue()!=null)
+                certificate.put("issuer", authority.getIdentifier().getValue());
+            else
                addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0].authority.reference.identifier", out);
+            if(doseNumber!=null)
+               vaccination.put("dose",doseNumber.asStringValue());
+            else
+               addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0].doseNumber", out);
+            if(seriesDoses!=null)
+               vaccination.put("totalDoses",seriesDoses.asStringValue());
+            if(disCoding!=null){
+                vaccination.putRawValue("disease",new RawValue("{\"system\":\""+
+                        disCoding.getSystem()+"\",\"code\":\""+
+                        disCoding.getCode()+"\"}"));
+            }
         }
         else{
             addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0]", out);
@@ -889,9 +908,9 @@ public class DDCCVSCoreDataSetService {
         if(event!=null){
             Period period = event.getPeriod();
             if(period!=null){
-                if(period.getStartElement()!=null)
+                if(period.getStartElement().asStringValue()!=null)
                     certificatePeriod.put("start",period.getStartElement().asStringValue());
-                if(period.getEndElement()!=null)
+                if(period.getEndElement().asStringValue()!=null)
                     certificatePeriod.put("end",period.getEndElement().asStringValue());
             }
         }
@@ -910,8 +929,95 @@ public class DDCCVSCoreDataSetService {
         else
             addNotFoundIssue("bundle.entry[Immunization].vaccineCode", out);
         
+        Extension brandEx = imm.getExtensionByUrl("http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCEventBrand");
+        if(brandEx!=null){
+            Coding coding = (Coding) brandEx.getValue();
+            if(coding!=null){
+                vaccination.putRawValue("brand",new RawValue("{\"system\":\""+
+                        coding.getSystem()+"\",\"code\":\""+
+                        coding.getCode()+"\"}"));
+            }
+            else
+                addNotFoundIssue("bundle.entry[Immunization].extension[DDCCVaccineBrand].valueCoding",out);
+        }
+        else 
+            addNotFoundIssue("bundle.entry[Immunization].extension[DDCCVaccineBrand]", out);
+        Reference manufacturer = imm.getManufacturer();
+        if(manufacturer!=null){
+            Identifier iden = manufacturer.getIdentifier();
+            vaccination.putRawValue("manufacturer",new RawValue("{\"system\":\""+
+                        iden.getSystem()+"\",\"code\":\""+
+                        iden.getValue()+"\"}"));
+        }
+            
+        Extension maHolderEx = imm.getExtensionByUrl("http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCVaccineMarketAuthorization");
+        if(maHolderEx!=null){
+            Coding coding = (Coding) maHolderEx.getValue();
+            if(coding!=null){
+                vaccination.putRawValue("maholder",new RawValue("{\"system\":\""+
+                        coding.getSystem()+"\",\"code\":\""+
+                        coding.getCode()+"\"}"));
+            }
+        }   
+        
+        String lotNumber = imm.getLotNumber();
+        if(lotNumber!=null)
+            vaccination.put("lot",lotNumber);
+        else
+            addNotFoundIssue("bundle.entry[Immunization].lotNumber", out);
+        
+        DateTimeType occurrence = imm.getOccurrenceDateTimeType();
+        if(occurrence!=null)
+            vaccination.put("date",occurrence.asStringValue());
+        else
+            addNotFoundIssue("bundle.entry[Immunization].occurrence", out);
+           
+        Extension validFromEx = imm.getExtensionByUrl("http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCVaccineValidFrom");
+        if(maHolderEx!=null){
+            DateType date = (DateType) validFromEx.getValue();
+            if(date!=null){
+                vaccination.put("validFrom",date.asStringValue());
+            }
+        } 
+        
+        Extension countryEx = imm.getExtensionByUrl("http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCCountryOfVaccination");
+        if(countryEx!=null){
+            Coding coding = (Coding) countryEx.getValue();
+            if(coding!=null){
+                vaccination.putRawValue("country",new RawValue("{\"system\":\""+
+                        coding.getSystem()+"\",\"code\":\""+
+                        coding.getCode()+"\"}"));
+            }
+            else
+                addNotFoundIssue("bundle.entry[Immunization].extension[DDCCCountryOfVaccination].valueCoding",out);
+        }
+        else 
+            addNotFoundIssue("bundle.entry[Immunization].extension[DDCCCountryOfVaccination].valueCoding", out);
+        
+        String display = imm.getLocation().getDisplay();
+        if(display!=null)
+            vaccination.put("centre", display);
+        else
+            addNotFoundIssue("bundle.entry[Immunization].location.display",out);
+        
+        Reference actor = imm.getPerformerFirstRep().getActor();
+        if(actor!=null)
+            vaccination.putRawValue("practitioner",new RawValue("{\"value\":\""+actor.getIdentifier().getValue()+"\"}"));
+        
+        ImmunizationRecommendation.ImmunizationRecommendationRecommendationDateCriterionComponent dateCriterion =
+                immR.getRecommendationFirstRep().getDateCriterionFirstRep();
+        if(dateCriterion!=null)
+            vaccination.put("nextDose", dateCriterion.getValueElement().asStringValue());
+        Enumerations.AdministrativeGender gender = pat.getGender();
+        if(gender != null)
+            node.put("sex", gender.toCode());
         
         
-        return node.asText();
+        if(out.getIssue().size()>0){
+            String resourceToString = HapiFhirTools.resourceToString(out);
+            log.error(resourceToString);
+            return resourceToString;
+        }
+        return node.toString();
     }
 }
