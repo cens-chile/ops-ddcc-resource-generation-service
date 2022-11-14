@@ -880,11 +880,11 @@ public class DDCCVSCoreDataSetService {
                 certificate.put("issuer", authority.getIdentifier().getValue());
             else
                addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0].authority.reference.identifier", out);
-            if(doseNumber!=null)
+            if(doseNumber.asStringValue()!=null)
                vaccination.put("dose",doseNumber.asStringValue());
             else
                addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0].doseNumber", out);
-            if(seriesDoses!=null)
+            if(seriesDoses.asStringValue()!=null)
                vaccination.put("totalDoses",seriesDoses.asStringValue());
             if(disCoding!=null){
                 vaccination.putRawValue("disease",new RawValue("{\"system\":\""+
