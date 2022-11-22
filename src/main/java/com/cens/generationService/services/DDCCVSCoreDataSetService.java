@@ -12,9 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.RawValue;
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -27,7 +25,6 @@ import org.hl7.fhir.r4.model.Composition;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DateType;
 import org.hl7.fhir.r4.model.DocumentReference;
-import org.hl7.fhir.r4.model.Enumeration;
 import org.hl7.fhir.r4.model.Enumerations;
 import org.hl7.fhir.r4.model.Extension;
 import org.hl7.fhir.r4.model.HumanName;
@@ -35,16 +32,14 @@ import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Immunization;
 import org.hl7.fhir.r4.model.ImmunizationRecommendation;
-import org.hl7.fhir.r4.model.IntegerType;
 import org.hl7.fhir.r4.model.OperationOutcome;
+import org.hl7.fhir.r4.model.Organization;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Period;
 import org.hl7.fhir.r4.model.PositiveIntType;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.model.StringType;
-import org.hl7.fhir.r4.model.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -325,6 +320,11 @@ public class DDCCVSCoreDataSetService {
         pat.setId(patId.getValue().split(":")[2]);
         Reference patRef = new Reference(patId);
         
+        Organization org = new Organization();
+        HapiFhirTools.addProfileToResource(org,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCOrganization");
+        IdType orgId = IdType.newRandomUuid();
+        org.setId(orgId.getValue().split(":")[2]);
+        Reference orgRef = new Reference(orgId);
         
         Composition comp = new Composition();
         HapiFhirTools.addProfileToResource(comp,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCVSComposition");
@@ -338,7 +338,7 @@ public class DDCCVSCoreDataSetService {
         IdType immId = IdType.newRandomUuid();
         imm.setId(immId.getValue().split(":")[2]);
         Reference immRef = new Reference(immId);
-        
+         
         ImmunizationRecommendation immR = new ImmunizationRecommendation();
         HapiFhirTools.addProfileToResource(immR,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCImmunizationRecommendation");
         IdType immRId = IdType.newRandomUuid();
@@ -420,10 +420,14 @@ public class DDCCVSCoreDataSetService {
             JsonNode issuer = certificate.get("issuer");
             if(issuer!=null){
                 String pha = issuer.get("identifier").get("value").asText();
-                comp.getAuthorFirstRep().setType("Organization");
-                comp.getAuthorFirstRep().getIdentifier().setValue(pha);
                 Reference authority = imm.getProtocolAppliedFirstRep().getAuthority();
-                authority.getIdentifier().setValue(pha);
+                authority.setReference(orgRef.getReference());
+                
+                org.setName(pha);
+                comp.getAuthorFirstRep().setReference(orgRef.getReference());
+                comp.getAttesterFirstRep().setParty(orgRef);
+                comp.getAttesterFirstRep().setMode(Composition.CompositionAttestationMode.OFFICIAL);
+                
             }
             else{
                 addNotFoundIssue("certificate.issuer", out);
@@ -587,7 +591,6 @@ public class DDCCVSCoreDataSetService {
         comp.getSectionFirstRep().setFocus(immRef);
         comp.setSubject(patRef);
         comp.setTitle("Digital Documentation of COVID-19 Certificate (DDCC)");
-        comp.getAttesterFirstRep().setMode(Composition.CompositionAttestationMode.OFFICIAL);
         comp.getSectionFirstRep().addEntry(immRef);
         comp.getSectionFirstRep().addEntry(docRRef);
         
@@ -599,6 +602,7 @@ public class DDCCVSCoreDataSetService {
         addBundleEntryComponentToAddBundle(pat,patRef,b);
         addBundleEntryComponentToAddBundle(imm,immRef,b);
         addBundleEntryComponentToAddBundle(docR,docRRef,b);
+        addBundleEntryComponentToAddBundle(org, orgRef, b);
         if(immR.getRecommendationFirstRep().getDateCriterionFirstRep().getValue()!=null){
             comp.getSectionFirstRep().addEntry(immRRef);
             addBundleEntryComponentToAddBundle(immR,immRRef,b);
