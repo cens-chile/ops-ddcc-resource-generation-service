@@ -422,7 +422,7 @@ public class DDCCVSCoreDataSetService {
                 String pha = issuer.get("identifier").get("value").asText();
                 Reference authority = imm.getProtocolAppliedFirstRep().getAuthority();
                 authority.setReference(orgRef.getReference());
-                
+                authority.getIdentifier().setValue(pha);
                 org.setName(pha);
                 comp.getAuthorFirstRep().setReference(orgRef.getReference());
                 comp.getAttesterFirstRep().setParty(orgRef);
@@ -837,15 +837,39 @@ public class DDCCVSCoreDataSetService {
     
     
     public String resourcesToVSCoreDataSet(Bundle entry){
-        Bundle.BundleEntryComponent find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Composition.class,"PUT");
-        Composition comp = (Composition) find.getResource();
-        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Patient.class,"PUT");
-        Patient pat = (Patient) find.getResource();
-        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Immunization.class,"PUT");
-        Immunization imm = (Immunization) find.getResource();
-        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, ImmunizationRecommendation.class,"PUT");
-        ImmunizationRecommendation immR = (ImmunizationRecommendation) find.getResource();
         
+        OperationOutcome out = new OperationOutcome();
+        OperationOutcome.OperationOutcomeIssueComponent issue;
+        
+        Bundle.BundleEntryComponent find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Composition.class,"PUT");
+        Composition comp = null;
+        if(find!=null)
+            comp = (Composition) find.getResource();
+        else 
+            addNotFoundIssue("Composition resource", out);
+        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Patient.class,"PUT");
+        Patient pat = null;
+        if(find!=null)
+            pat = (Patient) find.getResource();
+        else 
+            addNotFoundIssue("Patient resource", out);
+        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Immunization.class,"PUT");
+        Immunization imm=null;
+        if(find!=null)
+            imm = (Immunization) find.getResource();
+        else 
+            addNotFoundIssue("Immunization resource", out);
+        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, ImmunizationRecommendation.class,"PUT");
+        ImmunizationRecommendation immR = null;
+        if(find!=null)
+            immR = (ImmunizationRecommendation) find.getResource();
+        
+        find = HapiFhirTools.findEntryByResourceClassAndRemove(entry, Organization.class,"PUT");
+        Organization org = null;
+        if(find!=null)
+            org = (Organization) find.getResource();
+        else 
+            addNotFoundIssue("Organization resource", out);
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("resourceType", "DDCCCoreDataSet");
         
@@ -855,8 +879,7 @@ public class DDCCVSCoreDataSetService {
         certificate.putPOJO("period", certificatePeriod);
         ObjectNode vaccination = JsonNodeFactory.instance.objectNode();
         node.putPOJO("vaccination", vaccination);
-        OperationOutcome out = new OperationOutcome();
-        OperationOutcome.OperationOutcomeIssueComponent issue;
+        
         
         
         HumanName name = pat.getNameFirstRep();
@@ -882,8 +905,10 @@ public class DDCCVSCoreDataSetService {
             Coding disCoding = protocolApplied.getTargetDiseaseFirstRep().getCodingFirstRep();
             if(authority.getIdentifier().getValue()!=null)
                 certificate.put("issuer", authority.getIdentifier().getValue());
+            else if(org!=null && org.getName()!=null)
+                certificate.put("issuer", org.getName());
             else
-               addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0].authority.reference.identifier", out);
+               addNotFoundIssue("bundle.entry[Immunization].protocolApplied[0].authority.reference.identifier and Organization.name", out);
             if(doseNumber.asStringValue()!=null)
                vaccination.put("dose",doseNumber.asStringValue());
             else
@@ -901,7 +926,7 @@ public class DDCCVSCoreDataSetService {
         }
         
         Bundle.BundleLinkComponent link = entry.getLinkFirstRep();
-        if(link!=null)
+        if(link!=null && link.getUrl()!=null)
             certificate.put("hcid", link.getUrl().replace("urn:HCID:", ""));
         else
             addNotFoundIssue("bundle.link[0].url", out); 
