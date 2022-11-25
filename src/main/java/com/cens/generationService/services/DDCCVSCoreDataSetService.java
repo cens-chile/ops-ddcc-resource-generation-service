@@ -16,9 +16,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
+
+import org.hl7.fhir.r4.model.Enumerations.DocumentReferenceStatus;
 import org.hl7.fhir.exceptions.FHIRException;
 import org.hl7.fhir.r4.model.Attachment;
 import org.hl7.fhir.r4.model.Bundle;
+import org.hl7.fhir.r4.model.CodeType;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.Composition;
@@ -40,6 +43,7 @@ import org.hl7.fhir.r4.model.PositiveIntType;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.Resource;
+import org.hl7.fhir.r4.model.Immunization.ImmunizationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -338,19 +342,26 @@ public class DDCCVSCoreDataSetService {
         IdType immId = IdType.newRandomUuid();
         imm.setId(immId.getValue().split(":")[2]);
         Reference immRef = new Reference(immId);
+        imm.setStatus(ImmunizationStatus.COMPLETED);
          
         ImmunizationRecommendation immR = new ImmunizationRecommendation();
         HapiFhirTools.addProfileToResource(immR,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCImmunizationRecommendation");
         IdType immRId = IdType.newRandomUuid();
         immR.setId(immRId.getValue().split(":")[2]);
         Reference immRRef = new Reference(immRId);
-        
+        immR.getRecommendationFirstRep().getForecastStatus().getCodingFirstRep().setSystem("http://terminology.hl7.org/CodeSystem/immunization-recommendation-status");
+        immR.getRecommendationFirstRep().getForecastStatus().getCodingFirstRep().setCode("due");
+        immR.getRecommendationFirstRep().getDateCriterionFirstRep().getCode().getCodingFirstRep().setSystem("http://loinc.org");
+        immR.getRecommendationFirstRep().getDateCriterionFirstRep().getCode().getCodingFirstRep().setCode("30980-7");
+        immR.getRecommendationFirstRep().getSupportingImmunization().add(immRef);
+
         DocumentReference docR = new DocumentReference();
         String qrSystem = "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Format-CodeSystem";
         HapiFhirTools.addProfileToResource(docR,"http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCDocumentReferenceQR");
         IdType docRId = IdType.newRandomUuid();
         docR.setId(docRId.getValue().split(":")[2]);
         Reference docRRef = new Reference(docRId);
+        docR.setStatus(DocumentReferenceStatus.CURRENT);
         docR.setType(new CodeableConcept(new Coding("http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Type-CodeSystem"
                 ,"who","WHO DDCC")));
         docR.setSubject(patRef);
@@ -427,6 +438,7 @@ public class DDCCVSCoreDataSetService {
                 comp.getAuthorFirstRep().setReference(orgRef.getReference());
                 comp.getAttesterFirstRep().setParty(orgRef);
                 comp.getAttesterFirstRep().setMode(Composition.CompositionAttestationMode.OFFICIAL);
+                docR.getAuthenticator().setReference(orgRef.getReference());
                 
             }
             else{
@@ -534,10 +546,10 @@ public class DDCCVSCoreDataSetService {
             
             JsonNode country = vaccination.get("country");
             if(country!=null){
-                Extension cou = new Extension("http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCCountryOfVaccination");
-                String vS = country.get("system").asText();
+                Extension cou = new Extension("http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCCountryOfEvent");
+                //String vS = country.get("system").asText();
                 String vC = country.get("code").asText();
-                cou.setValue(new Coding(vS, vC,""));
+                cou.setValue(new CodeType(vC));
                 imm.addExtension(cou);
             }
             else{
@@ -553,9 +565,9 @@ public class DDCCVSCoreDataSetService {
             }
             
             JsonNode disease = vaccination.get("disease");
-            if(country!=null){
-                String vS = country.get("system").asText();
-                String vC = country.get("code").asText();
+            if(disease!=null){
+                String vS = disease.get("system").asText();
+                String vC = disease.get("code").asText();
                 imm.getProtocolAppliedFirstRep().getTargetDiseaseFirstRep().addCoding(new Coding(vS, vC, ""));
             }
             JsonNode nextDose = vaccination.get("nextDose");
