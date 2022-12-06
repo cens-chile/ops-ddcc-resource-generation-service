@@ -11,28 +11,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ApplicationProperties {
-    @Value("${store.url}")
-    String storeUrl;
-    @Value("${register.url}")
-    String registerUrl;
-    @Value("${base.url}")
+
+    @Value("${base.path}")
     String baseUrl;
-
-    public String getStoreUrl() {
-        return storeUrl;
-    }
-
-    public void setStoreUrl(String storeUrl) {
-        this.storeUrl = storeUrl;
-    }
-
-    public String getRegisterUrl() {
-        return registerUrl;
-    }
-
-    public void setRegisterUrl(String registerUrl) {
-        this.registerUrl = registerUrl;
-    }
 
     public String getBaseUrl() {
         return baseUrl;
