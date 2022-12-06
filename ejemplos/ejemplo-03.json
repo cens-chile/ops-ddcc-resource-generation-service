@@ -1,0 +1,345 @@
+{
+    "resourceType": "Bundle",
+    "id": "b90b86aa-9801-4246-9c69-9e5ac988fde2",
+    "meta": {
+        "versionId": "1",
+        "lastUpdated": "2022-11-08T21:15:35.227+00:00",
+        "source": "#48YhvC7cnzZlLYmc"
+    },
+    "identifier": {
+        "system": "http://worldhealthorgnaization.github.io/ddcc/Document",
+        "value": "b90b86aa-9801-4246-9c69-9e5ac988fde2"
+    },
+    "type": "document",
+    "total": 1,
+    "link": [
+        {
+            "relation": "publication",
+            "url": "urn:HCID:111000111"
+        }
+    ],
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:2f7ebdc8-d43d-4446-bbd1-0bdde3e62ea1",
+            "resource": {
+                "resourceType": "Composition",
+                "id": "2f7ebdc8-d43d-4446-bbd1-0bdde3e62ea1",
+                "meta": {
+                    "profile": [
+                        "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCVSComposition"
+                    ]
+                },
+                "identifier": {
+                    "system": "http://acme.org/idcomposition",
+                    "value": "123617826318673"
+                },
+                "status": "final",
+                "type": {
+                    "coding": [
+                        {
+                            "system": "http://loinc.org",
+                            "code": "82593-5"
+                        }
+                    ]
+                },
+                "category": [
+                    {
+                        "coding": [
+                            {
+                                "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-Composition-Category-CodeSystem",
+                                "code": "ddcc-vs"
+                            }
+                        ]
+                    }
+                ],
+                "subject": {
+                    "reference": "urn:uuid:307ed872-cb1c-41a6-b97f-dd271e0083f7"
+                },
+                "date": "2022-11-23T10:34:26-03:00",
+                "author": [
+                    {
+                        "reference": "urn:uuid:7a98d92e-6bf6-4bee-b5ac-da6c67783462"
+                    }
+                ],
+                "title": "Digital Documentation of COVID-19 Certificate (DDCC)",
+                "attester": [
+                    {
+                        "mode": "official",
+                        "party": {
+                            "reference": "urn:uuid:7a98d92e-6bf6-4bee-b5ac-da6c67783462"
+                        }
+                    }
+                ],
+                "event": [
+                    {
+                        "period": {
+                            "start": "2022-04-05"
+                        }
+                    }
+                ],
+                "section": [
+                    {
+                        "code": {
+                            "coding": [
+                                {
+                                    "system": "http://loinc.org",
+                                    "code": "11369-6"
+                                }
+                            ]
+                        },
+                        "focus": {
+                            "reference": "urn:uuid:a382742e-9faf-43b9-96d5-62777c6bccec"
+                        },
+                        "entry": [
+                            {
+                                "reference": "urn:uuid:a382742e-9faf-43b9-96d5-62777c6bccec"
+                            },
+                            {
+                                "reference": "urn:uuid:9459529b-cc7a-48ca-9eef-4b9396dddffe"
+                            },
+                            {
+                                "reference": "urn:uuid:954846f7-bbc8-4d74-bc19-264e953db246"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "request": {
+                "method": "PUT",
+                "url": "Composition/2f7ebdc8-d43d-4446-bbd1-0bdde3e62ea1"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:307ed872-cb1c-41a6-b97f-dd271e0083f7",
+            "resource": {
+                "resourceType": "Patient",
+                "id": "307ed872-cb1c-41a6-b97f-dd271e0083f7",
+                "meta": {
+                    "profile": [
+                        "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCPatient"
+                    ]
+                },
+                "identifier": [
+                    {
+                        "value": "12345678904"
+                    }
+                ],
+                "name": [
+                    {
+                        "use": "official",
+                        "text": "Juan Carlos Perez"
+                    }
+                ],
+                "gender": "male",
+                "birthDate": "1993-08-17"
+            },
+            "request": {
+                "method": "PUT",
+                "url": "Patient/307ed872-cb1c-41a6-b97f-dd271e0083f7"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:a382742e-9faf-43b9-96d5-62777c6bccec",
+            "resource": {
+                "resourceType": "Immunization",
+                "id": "a382742e-9faf-43b9-96d5-62777c6bccec",
+                "meta": {
+                    "profile": [
+                        "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCImmunization"
+                    ]
+                },
+                "extension": [
+                    {
+                        "url": "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCEventBrand",
+                        "valueCoding": {
+                            "system": "http://id.who.int/icd11/mms",
+                            "code": "XM4YL8"
+                        }
+                    },
+                    {
+                        "url": "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCVaccineMarketAuthorization",
+                        "valueCoding": {
+                            "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-Example-Test-CodeSystem",
+                            "code": "TEST"
+                        }
+                    },
+                    {
+                        "url": "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCVaccineValidFrom",
+                        "valueDate": "2021-04-19"
+                    },
+                    {
+                        "url": "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCCountryOfVaccination",
+                        "valueCoding": {
+                            "system": "urn:iso:std:iso:3166",
+                            "code": "ESP"
+                        }
+                    }
+                ],
+                "vaccineCode": {
+                    "coding": [
+                        {
+                            "system": "http://id.who.int/icd11/mms",
+                            "code": "XM9QW8"
+                        }
+                    ]
+                },
+                "patient": {
+                    "reference": "urn:uuid:307ed872-cb1c-41a6-b97f-dd271e0083f7"
+                },
+                "occurrenceDateTime": "2021-04-05",
+                "location": {
+                    "display": "xxx1yyy2"
+                },
+                "manufacturer": {
+                    "identifier": {
+                        "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-Example-Test-CodeSystem",
+                        "value": "TEST"
+                    }
+                },
+                "lotNumber": "ER8732",
+                "protocolApplied": [
+                    {
+                        "authority": {
+                            "reference": "urn:uuid:7a98d92e-6bf6-4bee-b5ac-da6c67783462",
+                            "identifier": {
+                                "value": "dPD2PfwzBQyphcjeUiAdRP"
+                            }
+                        },
+                        "targetDisease": [
+                            {
+                                "coding": [
+                                    {
+                                        "system": "urn:iso:std:iso:3166",
+                                        "code": "ESP"
+                                    }
+                                ]
+                            }
+                        ],
+                        "doseNumberPositiveInt": 1,
+                        "seriesDosesPositiveInt": 5
+                    }
+                ]
+            },
+            "request": {
+                "method": "PUT",
+                "url": "Immunization/a382742e-9faf-43b9-96d5-62777c6bccec"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:9459529b-cc7a-48ca-9eef-4b9396dddffe",
+            "resource": {
+                "resourceType": "DocumentReference",
+                "id": "9459529b-cc7a-48ca-9eef-4b9396dddffe",
+                "meta": {
+                    "profile": [
+                        "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCDocumentReferenceQR"
+                    ]
+                },
+                "type": {
+                    "coding": [
+                        {
+                            "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Type-CodeSystem",
+                            "code": "who",
+                            "display": "WHO DDCC"
+                        }
+                    ]
+                },
+                "subject": {
+                    "reference": "urn:uuid:307ed872-cb1c-41a6-b97f-dd271e0083f7"
+                },
+                "description": "WHO QR code for COVID 19 Vaccine Certificate",
+                "content": [
+                    {
+                        "attachment": {
+                            "contentType": "attachment"
+                        },
+                        "format": {
+                            "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Format-CodeSystem",
+                            "code": "serialized"
+                        }
+                    },
+                    {
+                        "attachment": {
+                            "contentType": "attachment"
+                        },
+                        "format": {
+                            "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Format-CodeSystem",
+                            "code": "image"
+                        }
+                    },
+                    {
+                        "attachment": {
+                            "contentType": "attachment"
+                        },
+                        "format": {
+                            "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-QR-Format-CodeSystem",
+                            "code": "pdf"
+                        }
+                    }
+                ]
+            },
+            "request": {
+                "method": "PUT",
+                "url": "DocumentReference/9459529b-cc7a-48ca-9eef-4b9396dddffe"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:7a98d92e-6bf6-4bee-b5ac-da6c67783462",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "7a98d92e-6bf6-4bee-b5ac-da6c67783462",
+                "meta": {
+                    "profile": [
+                        "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCOrganization"
+                    ]
+                },
+                "name": "dPD2PfwzBQyphcjeUiAdRP"
+            },
+            "request": {
+                "method": "PUT",
+                "url": "Organization/7a98d92e-6bf6-4bee-b5ac-da6c67783462"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:954846f7-bbc8-4d74-bc19-264e953db246",
+            "resource": {
+                "resourceType": "ImmunizationRecommendation",
+                "id": "954846f7-bbc8-4d74-bc19-264e953db246",
+                "meta": {
+                    "profile": [
+                        "http://worldhealthorganization.github.io/ddcc/StructureDefinition/DDCCImmunizationRecommendation"
+                    ]
+                },
+                "patient": {
+                    "reference": "urn:uuid:307ed872-cb1c-41a6-b97f-dd271e0083f7"
+                },
+                "date": "2021-04-05",
+                "recommendation": [
+                    {
+                        "vaccineCode": [
+                            {
+                                "coding": [
+                                    {
+                                        "system": "http://id.who.int/icd11/mms",
+                                        "code": "XM9QW8"
+                                    }
+                                ]
+                            }
+                        ],
+                        "dateCriterion": [
+                            {
+                                "value": "2021-04-28"
+                            }
+                        ],
+                        "doseNumberPositiveInt": 1,
+                        "seriesDosesPositiveInt": 1
+                    }
+                ]
+            },
+            "request": {
+                "method": "PUT",
+                "url": "ImmunizationRecommendation/954846f7-bbc8-4d74-bc19-264e953db246"
+            }
+        }
+    ]
+}

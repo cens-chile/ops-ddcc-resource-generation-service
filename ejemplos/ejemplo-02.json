@@ -1,0 +1,58 @@
+{
+    "resourceType": "DDCCCoreDataSet",
+    "certificate": {
+        "period": {
+            "start": "2021-04-05",
+            "end": "2022-04-05"
+        },
+        "hcid": {
+            "value": "bMlJkAt0V92RYhhG3fNt4"
+        },
+        "version": "RC2",
+        "issuer": {
+            "identifier": {
+                "value": "dPD2PfwzBQyphcjeUiAdRP"
+            }
+        }
+    },
+    "vaccination": {
+        "vaccine": {
+            "system": "http://id.who.int/icd11/mms",
+            "code": "XM9QW8"
+        },
+        "brand": {
+            "system": "http://id.who.int/icd11/mms",
+            "code": "XM4YL8"
+        },
+        "manufacturer": {
+            "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-Example-Test-CodeSystem",
+            "code": "TEST"
+        },
+        "maholder": {
+            "system": "http://worldhealthorganization.github.io/ddcc/CodeSystem/DDCC-Example-Test-CodeSystem",
+            "code": "TEST"
+        },
+        "lot": "ER8732",
+        "date": "2021-04-05",
+        "validFrom": "2021-04-19",
+        "dose": 1,
+        "totalDoses": 5,
+        "country": {
+            "system": "urn:iso:std:iso:3166",
+            "code": "ESP"
+        },
+        "centre": "xxx1yyy2",
+        "practitioner": {
+            "value": ""
+        },
+        "disease": {
+            "system": "http://id.who.int/icd11/mms",
+            "code": "RA01"
+        },
+        "nextDose": "2021-04-28"
+    },
+    "name": "Juan Carlos Perez",
+    "birthDate": "1993-08-17",
+    "identifier": "12345678904",
+    "sex": "male"
+}
