@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.cens.generationService.services.DVCCoreDataSetService;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.QuestionnaireResponse;
@@ -41,8 +43,10 @@ public class StructureMapResourceProvider implements IResourceProvider{
     @Autowired
     ApplicationProperties properties;
     @Autowired
-    DDCCVSCoreDataSetService service;
-    
+    DDCCVSCoreDataSetService DDCCService;
+    @Autowired
+    DVCCoreDataSetService DVCService;
+
     @Override
     public Class<? extends IBaseResource> getResourceType() {
         return StructureMap.class;
@@ -73,18 +77,29 @@ public class StructureMapResourceProvider implements IResourceProvider{
             FhirContext ctx = FhirContext.forR4();
             IParser parser = ctx.newJsonParser();
             QuestionnaireResponse parsed = parser.parseResource(QuestionnaireResponse.class, data);
-            res = this.service.QRtoDDCCVSCoreDataSetStringJson(parsed);
+            res = this.DDCCService.QRtoDDCCVSCoreDataSetStringJson(parsed);
         }
         else if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/CoreDataSetVSToAddBundle")){
             String core = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-            res = this.service.transformDDCCVSCoreDataSetToAddBundle(core);
+            res = this.DDCCService.transformDDCCVSCoreDataSetToAddBundle(core);
         }
         else if(source[0].equals("http://worldhealthorganization.github.io/ddcc/StructureMap/ResourcesToVSCoreDataSet")){
             String data = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
             FhirContext ctx = FhirContext.forR4();
             IParser parser = ctx.newJsonParser();
             Bundle b = parser.parseResource(Bundle.class, data);
-            res = this.service.resourcesToVSCoreDataSet(b);
+            res = this.DDCCService.resourcesToVSCoreDataSet(b);
+        }
+        else if(source[0].equals("http://worldhealthorganization.github.io/icvp/StructureMap/QRespDVCToDVC")){
+            String data = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            FhirContext ctx = FhirContext.forR4();
+            IParser parser = ctx.newJsonParser();
+            QuestionnaireResponse parsed = parser.parseResource(QuestionnaireResponse.class, data);
+            res = this.DVCService.QRtoDVCCoreDataSetStringJson(parsed);
+        }
+        else if(source[0].equals("http://worldhealthorganization.github.io/icvp/StructureMap/DVCToBundleDocument")){
+            String core = theServletRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            res = this.DVCService.transformDVCCoreDataSetToAddBundle(core);
         }
         else{
             throw new UnprocessableEntityException("Map not available with canonical url "+source[0]);

@@ -20,8 +20,8 @@ import org.hl7.fhir.r4.model.Resource;
  * @author José <jose.m.andrade@gmail.com>
  */
 public final class HapiFhirTools {
-    
-    
+
+
     public static void printResource(Resource r, Class clazz){
         
         FhirContext ctx = FhirContext.forR4();
@@ -89,10 +89,10 @@ public final class HapiFhirTools {
         }
         return null;
     }
-    
+
     public static void addProfileToResource(Resource r, String profile)
     {
         r.getMeta().getProfile().add(new CanonicalType(profile));
     }
-    
+
 }
